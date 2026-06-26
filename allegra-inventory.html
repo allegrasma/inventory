@@ -1,0 +1,804 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Allegra — Props & Costumes Inventory</title>
+  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet" />
+  <style>
+    /* ── Tokens ─────────────────────────────────────────────── */
+    :root {
+      --bg:        #0f0f0f;
+      --surface:   #1a1a1a;
+      --surface2:  #242424;
+      --border:    #2e2e2e;
+      --text:      #f0ece4;
+      --muted:     #888;
+      --accent:    #c9a84c;   /* warm gold — stage light */
+
+      --zone-a: #E87722;
+      --zone-b: #4A90D9;
+      --zone-c: #D4B800;
+      --zone-d: #5A9E3A;
+      --zone-e: #8B4FBF;
+
+      --radius: 10px;
+      --card-w: 260px;
+    }
+
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: 'Inter', sans-serif;
+      font-size: 15px;
+      min-height: 100vh;
+    }
+
+    /* ── Header ─────────────────────────────────────────────── */
+    header {
+      border-bottom: 1px solid var(--border);
+      padding: 24px 32px;
+      display: flex;
+      align-items: baseline;
+      gap: 16px;
+    }
+    header h1 {
+      font-family: 'Playfair Display', serif;
+      font-size: 26px;
+      color: var(--accent);
+      letter-spacing: 0.02em;
+    }
+    header span {
+      color: var(--muted);
+      font-size: 13px;
+    }
+
+    /* ── Layout ─────────────────────────────────────────────── */
+    .shell {
+      display: flex;
+      min-height: calc(100vh - 73px);
+    }
+
+    /* ── Sidebar filters ─────────────────────────────────────── */
+    aside {
+      width: 220px;
+      flex-shrink: 0;
+      border-right: 1px solid var(--border);
+      padding: 24px 20px;
+      display: flex;
+      flex-direction: column;
+      gap: 24px;
+    }
+
+    .filter-group label {
+      display: block;
+      font-size: 11px;
+      font-weight: 600;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      color: var(--muted);
+      margin-bottom: 8px;
+    }
+
+    .filter-group select,
+    .filter-group input[type="text"] {
+      width: 100%;
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      color: var(--text);
+      font-family: 'Inter', sans-serif;
+      font-size: 13px;
+      padding: 8px 10px;
+      appearance: none;
+      cursor: pointer;
+    }
+    .filter-group select:focus,
+    .filter-group input[type="text"]:focus {
+      outline: 2px solid var(--accent);
+      outline-offset: 1px;
+    }
+
+    .zone-pills {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+    .zone-pill {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 7px 10px;
+      border-radius: 6px;
+      border: 1px solid var(--border);
+      background: var(--surface2);
+      cursor: pointer;
+      font-size: 13px;
+      transition: border-color 0.15s;
+      user-select: none;
+    }
+    .zone-pill:hover { border-color: var(--muted); }
+    .zone-pill.active { border-color: var(--accent); background: #1e1c16; }
+    .zone-dot {
+      width: 10px; height: 10px;
+      border-radius: 50%;
+      flex-shrink: 0;
+    }
+
+    .reset-btn {
+      background: none;
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      color: var(--muted);
+      font-family: 'Inter', sans-serif;
+      font-size: 12px;
+      padding: 8px;
+      cursor: pointer;
+      transition: color 0.15s, border-color 0.15s;
+      width: 100%;
+    }
+    .reset-btn:hover { color: var(--text); border-color: var(--muted); }
+
+    /* ── Main content ────────────────────────────────────────── */
+    main {
+      flex: 1;
+      padding: 24px 28px;
+      overflow: auto;
+    }
+
+    .toolbar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 20px;
+      gap: 12px;
+    }
+
+    #search-input {
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      color: var(--text);
+      font-family: 'Inter', sans-serif;
+      font-size: 14px;
+      padding: 9px 14px;
+      width: 280px;
+    }
+    #search-input:focus {
+      outline: 2px solid var(--accent);
+      outline-offset: 1px;
+    }
+    #search-input::placeholder { color: var(--muted); }
+
+    #result-count {
+      color: var(--muted);
+      font-size: 13px;
+      white-space: nowrap;
+    }
+
+    /* ── Card grid ───────────────────────────────────────────── */
+    #grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(var(--card-w), 1fr));
+      gap: 18px;
+    }
+
+    .card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      overflow: hidden;
+      cursor: pointer;
+      transition: transform 0.15s, border-color 0.15s;
+    }
+    .card:hover {
+      transform: translateY(-3px);
+      border-color: var(--accent);
+    }
+
+    .card-img {
+      width: 100%;
+      aspect-ratio: 4/3;
+      object-fit: cover;
+      background: var(--surface2);
+      display: block;
+    }
+    .card-no-img {
+      width: 100%;
+      aspect-ratio: 4/3;
+      background: var(--surface2);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: var(--border);
+      font-size: 36px;
+    }
+
+    .card-body {
+      padding: 14px;
+    }
+
+    .card-top {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 10px;
+    }
+
+    .zone-badge {
+      font-size: 11px;
+      font-weight: 600;
+      letter-spacing: 0.06em;
+      padding: 3px 8px;
+      border-radius: 20px;
+      color: #000;
+    }
+
+    .location-tag {
+      font-size: 11px;
+      color: var(--muted);
+    }
+
+    .card-type {
+      font-size: 15px;
+      font-weight: 600;
+      margin-bottom: 4px;
+      color: var(--text);
+    }
+    .card-category {
+      font-size: 12px;
+      color: var(--muted);
+      margin-bottom: 10px;
+    }
+
+    .card-attrs {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 5px;
+    }
+    .attr-chip {
+      font-size: 11px;
+      padding: 3px 8px;
+      border-radius: 20px;
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      color: var(--muted);
+    }
+
+    /* ── Modal ───────────────────────────────────────────────── */
+    #modal-overlay {
+      display: none;
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,0.75);
+      z-index: 100;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+    }
+    #modal-overlay.open { display: flex; }
+
+    #modal {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      max-width: 680px;
+      width: 100%;
+      max-height: 90vh;
+      overflow-y: auto;
+      position: relative;
+    }
+
+    #modal-close {
+      position: absolute;
+      top: 14px; right: 14px;
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      border-radius: 50%;
+      width: 32px; height: 32px;
+      color: var(--text);
+      font-size: 18px;
+      cursor: pointer;
+      display: flex; align-items: center; justify-content: center;
+      line-height: 1;
+    }
+
+    #modal-img {
+      width: 100%;
+      max-height: 340px;
+      object-fit: cover;
+      display: block;
+      border-radius: var(--radius) var(--radius) 0 0;
+    }
+    #modal-no-img {
+      width: 100%;
+      height: 200px;
+      background: var(--surface2);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: var(--border);
+      font-size: 56px;
+      border-radius: var(--radius) var(--radius) 0 0;
+    }
+
+    #modal-body { padding: 24px; }
+
+    #modal-header {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin-bottom: 16px;
+    }
+
+    #modal-type {
+      font-family: 'Playfair Display', serif;
+      font-size: 24px;
+    }
+
+    .detail-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 14px 24px;
+      margin-bottom: 16px;
+    }
+    .detail-item {}
+    .detail-label {
+      font-size: 11px;
+      font-weight: 600;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: var(--muted);
+      margin-bottom: 3px;
+    }
+    .detail-value {
+      font-size: 14px;
+      color: var(--text);
+    }
+
+    #modal-notes {
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      padding: 12px;
+      font-size: 13px;
+      color: var(--muted);
+      line-height: 1.6;
+    }
+
+    /* ── States ─────────────────────────────────────────────── */
+    #loading, #empty {
+      grid-column: 1/-1;
+      text-align: center;
+      padding: 60px 20px;
+      color: var(--muted);
+    }
+    #loading::after {
+      content: '';
+      display: inline-block;
+      width: 24px; height: 24px;
+      border: 2px solid var(--border);
+      border-top-color: var(--accent);
+      border-radius: 50%;
+      animation: spin 0.7s linear infinite;
+      margin-left: 10px;
+      vertical-align: middle;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    /* ── Responsive ──────────────────────────────────────────── */
+    @media (max-width: 700px) {
+      aside { display: none; }
+      header { padding: 16px; }
+      main { padding: 16px; }
+      .detail-grid { grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+<body>
+
+<header>
+  <h1>Allegra — Props & Costumes</h1>
+  <span id="header-count"></span>
+</header>
+
+<div class="shell">
+
+  <aside>
+    <div class="filter-group">
+      <label>Zone</label>
+      <div class="zone-pills" id="zone-pills">
+        <div class="zone-pill active" data-zone="all">
+          <span class="zone-dot" style="background:#555"></span> All zones
+        </div>
+        <div class="zone-pill" data-zone="A">
+          <span class="zone-dot" style="background:var(--zone-a)"></span> A — Orange
+        </div>
+        <div class="zone-pill" data-zone="B">
+          <span class="zone-dot" style="background:var(--zone-b)"></span> B — Blue
+        </div>
+        <div class="zone-pill" data-zone="C">
+          <span class="zone-dot" style="background:var(--zone-c)"></span> C — Yellow
+        </div>
+        <div class="zone-pill" data-zone="D">
+          <span class="zone-dot" style="background:var(--zone-d)"></span> D — Green
+        </div>
+        <div class="zone-pill" data-zone="E">
+          <span class="zone-dot" style="background:var(--zone-e)"></span> E — Purple
+        </div>
+      </div>
+    </div>
+
+    <div class="filter-group">
+      <label>Category</label>
+      <select id="filter-category">
+        <option value="">All categories</option>
+        <option>Small Props</option>
+        <option>Body Accessories</option>
+        <option>Fabrics</option>
+        <option>Large Props</option>
+        <option>Clothing</option>
+      </select>
+    </div>
+
+    <div class="filter-group">
+      <label>Type</label>
+      <select id="filter-type">
+        <option value="">All types</option>
+      </select>
+    </div>
+
+    <div class="filter-group">
+      <label>Color</label>
+      <select id="filter-color">
+        <option value="">All colors</option>
+        <option>Purple</option>
+        <option>Blue</option>
+        <option>Green</option>
+        <option>Yellow</option>
+        <option>Orange</option>
+        <option>Red</option>
+        <option>Black</option>
+        <option>White</option>
+        <option>Grey</option>
+        <option>Silver</option>
+        <option>Gold</option>
+        <option>Brown</option>
+        <option>Bronze</option>
+        <option>Multicolored</option>
+      </select>
+    </div>
+
+    <div class="filter-group">
+      <label>Size</label>
+      <select id="filter-size">
+        <option value="">All sizes</option>
+        <option>S</option>
+        <option>M</option>
+        <option>L</option>
+        <option>XL</option>
+        <option>XXL</option>
+        <option>One Size</option>
+        <option>See Notes</option>
+      </select>
+    </div>
+
+    <div class="filter-group">
+      <label>Storage Type</label>
+      <select id="filter-storage">
+        <option value="">All storage</option>
+        <option>Rack</option>
+        <option>Box</option>
+        <option>Shelf</option>
+        <option>Floor</option>
+        <option>Other</option>
+      </select>
+    </div>
+
+    <button class="reset-btn" id="reset-btn">Reset all filters</button>
+  </aside>
+
+  <main>
+    <div class="toolbar">
+      <input type="text" id="search-input" placeholder="Search by type, category, notes…" />
+      <span id="result-count"></span>
+    </div>
+    <div id="grid">
+      <div id="loading">Loading inventory</div>
+    </div>
+  </main>
+
+</div>
+
+<!-- Detail modal -->
+<div id="modal-overlay" role="dialog" aria-modal="true">
+  <div id="modal">
+    <button id="modal-close" aria-label="Close">×</button>
+    <div id="modal-img-wrap"></div>
+    <div id="modal-body">
+      <div id="modal-header">
+        <span id="modal-zone-badge" class="zone-badge"></span>
+        <span id="modal-type"></span>
+      </div>
+      <div class="detail-grid" id="modal-details"></div>
+      <div id="modal-notes-wrap" style="display:none">
+        <div class="detail-label" style="margin-bottom:6px">Notes</div>
+        <div id="modal-notes"></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+  // ── Config ──────────────────────────────────────────────────
+  const CSV_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vQnfd_kK1f5cMXtx8T-wTeiFl5H412IMK9DG6w16JuA3RHiQ9A_8nIMqFa0c_OVvuTH5jFgAbqex5u9/pub?gid=2130405397&single=true&output=csv';
+
+  const ZONE_COLORS = {
+    A: { hex: '#E87722', label: 'Orange' },
+    B: { hex: '#4A90D9', label: 'Blue'   },
+    C: { hex: '#D4B800', label: 'Yellow' },
+    D: { hex: '#5A9E3A', label: 'Green'  },
+    E: { hex: '#8B4FBF', label: 'Purple' },
+  };
+
+  const TYPE_BY_CATEGORY = {
+    'Small Props':       ['Food','Homewear','Plants','Party Decorations','Sports','Games','Ropes','Electronics','Misc Props'],
+    'Body Accessories':  ['Masks / Headbands','Non Funky Hats','Funky Hats','Straw Hats','Animal Hats','Shoes','Umbrellas','Boas','Bandanas','Scarves','Ties','Aprons','Suspenders','Wigs','Gloves and Socks','Misc Accessories'],
+    'Fabrics':           ['Linens','Sparkly','Misc Fabrics'],
+    'Large Props':       ['Weapons','Loose Fabrics','Furniture','Bags & Suitcases','Misc'],
+    'Clothing':          ['Tops','Cardigans / Blazers / Coats','Trousers','Skirts','Dresses','T-Shirts','Weird'],
+  };
+
+  // ── State ───────────────────────────────────────────────────
+  let allItems = [];
+  let activeZone = 'all';
+
+  // ── CSV parser ──────────────────────────────────────────────
+  function parseCSV(text) {
+    const lines = text.trim().split('\n');
+    const headers = parseRow(lines[0]);
+    return lines.slice(1).map(line => {
+      const vals = parseRow(line);
+      const obj = {};
+      headers.forEach((h, i) => obj[h.trim()] = (vals[i] || '').trim());
+      return obj;
+    }).filter(r => Object.values(r).some(v => v));
+  }
+
+  function parseRow(line) {
+    const result = [];
+    let cur = '', inQ = false;
+    for (let i = 0; i < line.length; i++) {
+      const c = line[i];
+      if (c === '"') { inQ = !inQ; continue; }
+      if (c === ',' && !inQ) { result.push(cur); cur = ''; continue; }
+      cur += c;
+    }
+    result.push(cur);
+    return result;
+  }
+
+  // ── Zone helpers ────────────────────────────────────────────
+  function getZoneLetter(zoneField) {
+    // Field comes as "A — Orange", extract the letter
+    if (!zoneField) return '';
+    return zoneField.trim().charAt(0).toUpperCase();
+  }
+
+  function photoUrl(raw) {
+    if (!raw) return null;
+    // Handle "open?id=FILE_ID" format
+    const match = raw.match(/[?&]id=([^&]+)/);
+    if (match) return `https://lh3.googleusercontent.com/d/${match[1]}`;
+    // Handle direct file URL format e.g. /d/FILE_ID/view
+    const match2 = raw.match(/\/d\/([^/]+)\//);
+    if (match2) return `https://lh3.googleusercontent.com/d/${match2[1]}`;
+    return null;
+  }
+
+  // ── Render ──────────────────────────────────────────────────
+  function renderCards(items) {
+    const grid = document.getElementById('grid');
+    const count = document.getElementById('result-count');
+    const hcount = document.getElementById('header-count');
+
+    if (items.length === 0) {
+      grid.innerHTML = '<div id="empty">No items match your filters.</div>';
+      count.textContent = '0 items';
+      return;
+    }
+
+    count.textContent = `${items.length} item${items.length === 1 ? '' : 's'}`;
+    hcount.textContent = `${allItems.length} items`;
+
+    grid.innerHTML = items.map((item, idx) => {
+      const zone = getZoneLetter(item['Zone']);
+      const zc = ZONE_COLORS[zone] || { hex: '#555', label: '' };
+      const img = photoUrl(item['Item image']);
+      const storageLabel = [item['Storage Type'], item['Storage Number']].filter(Boolean).join(' ');
+
+      return `
+        <div class="card" data-idx="${idx}" tabindex="0" role="button" aria-label="${item['Type'] || 'Item'}">
+          ${img
+            ? `<img class="card-img" src="${img}" alt="${item['Type'] || 'Item'}" loading="lazy" onerror="this.style.display='none';this.nextElementSibling.style.display='flex'">`
+            : ''}
+          <div class="card-no-img" style="${img ? 'display:none' : ''}">🎭</div>
+          <div class="card-body">
+            <div class="card-top">
+              <span class="zone-badge" style="background:${zc.hex}">${zone} — ${zc.label}</span>
+              <span class="location-tag">${storageLabel}</span>
+            </div>
+            <div class="card-type">${item['Type'] || '—'}</div>
+            <div class="card-category">${item['Category'] || ''}</div>
+            <div class="card-attrs">
+              ${item['Color'] && item['Color'] !== 'N/A' ? `<span class="attr-chip">${item['Color']}</span>` : ''}
+              ${item['Size'] ? `<span class="attr-chip">${item['Size']}</span>` : ''}
+            </div>
+          </div>
+        </div>`;
+    }).join('');
+
+    // Click handlers
+    grid.querySelectorAll('.card').forEach(card => {
+      const open = () => openModal(items[+card.dataset.idx]);
+      card.addEventListener('click', open);
+      card.addEventListener('keydown', e => { if (e.key === 'Enter' || e.key === ' ') open(); });
+    });
+  }
+
+  // ── Filter ──────────────────────────────────────────────────
+  function applyFilters() {
+    const q       = document.getElementById('search-input').value.toLowerCase();
+    const cat     = document.getElementById('filter-category').value;
+    const type    = document.getElementById('filter-type').value;
+    const color   = document.getElementById('filter-color').value;
+    const size    = document.getElementById('filter-size').value;
+    const storage = document.getElementById('filter-storage').value;
+
+    const filtered = allItems.filter(item => {
+      const zone = getZoneLetter(item['Zone']);
+      if (activeZone !== 'all' && zone !== activeZone) return false;
+      if (cat     && item['Category']     !== cat)     return false;
+      if (type    && item['Type']         !== type)    return false;
+      if (color   && item['Color']        !== color)   return false;
+      if (size    && item['Size']         !== size)    return false;
+      if (storage && item['Storage Type'] !== storage) return false;
+      if (q) {
+        const searchable = [item['Type'], item['Category'], item['Color'], item['Notes'], item['Zone']].join(' ').toLowerCase();
+        if (!searchable.includes(q)) return false;
+      }
+      return true;
+    });
+
+    renderCards(filtered);
+  }
+
+  // ── Type dropdown cascades with Category ────────────────────
+  function updateTypeDropdown(cat) {
+    const sel = document.getElementById('filter-type');
+    const prev = sel.value;
+    sel.innerHTML = '<option value="">All types</option>';
+    const types = cat ? (TYPE_BY_CATEGORY[cat] || []) : Object.values(TYPE_BY_CATEGORY).flat();
+    types.forEach(t => {
+      const o = document.createElement('option');
+      o.value = o.textContent = t;
+      if (t === prev) o.selected = true;
+      sel.appendChild(o);
+    });
+  }
+
+  // ── Modal ────────────────────────────────────────────────────
+  function openModal(item) {
+    const zone = getZoneLetter(item['Zone']);
+    const zc = ZONE_COLORS[zone] || { hex: '#555', label: '' };
+    const img = photoUrl(item['Item image']);
+
+    // Image
+    const wrap = document.getElementById('modal-img-wrap');
+    if (img) {
+      wrap.innerHTML = `<img id="modal-img" src="${img}" alt="${item['Type'] || 'Item'}" onerror="this.parentElement.innerHTML='<div id=modal-no-img>🎭</div>'">`;
+    } else {
+      wrap.innerHTML = '<div id="modal-no-img">🎭</div>';
+    }
+
+    // Badge + type
+    const badge = document.getElementById('modal-zone-badge');
+    badge.textContent = `${zone} — ${zc.label}`;
+    badge.style.background = zc.hex;
+    document.getElementById('modal-type').textContent = item['Type'] || '—';
+
+    // Details grid
+    const details = [
+      { label: 'Category',     value: item['Category'] },
+      { label: 'Zone',         value: item['Zone'] },
+      { label: 'Storage Type', value: item['Storage Type'] },
+      { label: 'Storage No.',  value: item['Storage Number'] },
+      { label: 'Color',        value: item['Color'] },
+      { label: 'Size',         value: item['Size'] },
+      { label: 'Date Added',   value: item['Timestamp'] ? new Date(item['Timestamp']).toLocaleDateString('en-US', {year:'numeric',month:'short',day:'numeric'}) : '' },
+    ];
+
+    document.getElementById('modal-details').innerHTML = details
+      .filter(d => d.value && d.value !== 'N/A')
+      .map(d => `<div class="detail-item"><div class="detail-label">${d.label}</div><div class="detail-value">${d.value}</div></div>`)
+      .join('');
+
+    // Notes
+    const notesWrap = document.getElementById('modal-notes-wrap');
+    if (item['Notes']) {
+      notesWrap.style.display = 'block';
+      document.getElementById('modal-notes').textContent = item['Notes'];
+    } else {
+      notesWrap.style.display = 'none';
+    }
+
+    document.getElementById('modal-overlay').classList.add('open');
+    document.body.style.overflow = 'hidden';
+  }
+
+  function closeModal() {
+    document.getElementById('modal-overlay').classList.remove('open');
+    document.body.style.overflow = '';
+  }
+
+  // ── Init ─────────────────────────────────────────────────────
+  async function init() {
+    try {
+      const res = await fetch(CSV_URL);
+      if (!res.ok) throw new Error('Failed to load');
+      const text = await res.text();
+      allItems = parseCSV(text);
+      document.getElementById('header-count').textContent = `${allItems.length} items`;
+      applyFilters();
+    } catch (e) {
+      document.getElementById('grid').innerHTML = '<div id="empty">Could not load inventory. Check your network connection or Sheet permissions.</div>';
+    }
+  }
+
+  // ── Event listeners ──────────────────────────────────────────
+  document.getElementById('search-input').addEventListener('input', applyFilters);
+  document.getElementById('filter-category').addEventListener('change', function() {
+    updateTypeDropdown(this.value);
+    applyFilters();
+  });
+  document.getElementById('filter-type').addEventListener('change', applyFilters);
+  document.getElementById('filter-color').addEventListener('change', applyFilters);
+  document.getElementById('filter-size').addEventListener('change', applyFilters);
+  document.getElementById('filter-storage').addEventListener('change', applyFilters);
+
+  document.getElementById('zone-pills').addEventListener('click', e => {
+    const pill = e.target.closest('.zone-pill');
+    if (!pill) return;
+    document.querySelectorAll('.zone-pill').forEach(p => p.classList.remove('active'));
+    pill.classList.add('active');
+    activeZone = pill.dataset.zone;
+    applyFilters();
+  });
+
+  document.getElementById('reset-btn').addEventListener('click', () => {
+    document.getElementById('search-input').value = '';
+    document.getElementById('filter-category').value = '';
+    document.getElementById('filter-color').value = '';
+    document.getElementById('filter-size').value = '';
+    document.getElementById('filter-storage').value = '';
+    updateTypeDropdown('');
+    document.getElementById('filter-type').value = '';
+    activeZone = 'all';
+    document.querySelectorAll('.zone-pill').forEach(p => p.classList.remove('active'));
+    document.querySelector('.zone-pill[data-zone="all"]').classList.add('active');
+    applyFilters();
+  });
+
+  document.getElementById('modal-close').addEventListener('click', closeModal);
+  document.getElementById('modal-overlay').addEventListener('click', e => {
+    if (e.target === document.getElementById('modal-overlay')) closeModal();
+  });
+  document.addEventListener('keydown', e => { if (e.key === 'Escape') closeModal(); });
+
+  updateTypeDropdown('');
+  init();
+</script>
+</body>
+</html>
