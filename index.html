@@ -644,6 +644,7 @@
       const zc = ZONE_COLORS[zone] || { hex: '#555', label: '' };
       const img = photoUrl(item['Item image']);
       const storageLabel = [item['Storage Type'], item['Storage Number']].filter(Boolean).join(' ');
+      const badgeLabel = storageLabel ? `${zone} — ${storageLabel}` : zone;
 
       return `
         <div class="card" data-idx="${idx}" tabindex="0" role="button" aria-label="${item['Type'] || 'Item'}">
@@ -652,8 +653,7 @@
             : '<div class="card-no-img">🎭</div>'}
           <div class="card-body">
             <div class="card-top">
-              <span class="zone-badge" style="background:${zc.hex}">${zone} — ${zc.label}</span>
-              <span class="location-tag">${storageLabel}</span>
+              <span class="zone-badge" style="background:${zc.hex}">${badgeLabel}</span>
             </div>
             <div class="card-type">${item['Type'] || '—'}</div>
             <div class="card-category">${item['Category'] || ''}</div>
@@ -729,17 +729,17 @@
     }
 
     // Badge + type
+    const storageLocation = [item['Storage Type'], item['Storage Number']].filter(Boolean).join(' ');
+    const modalBadgeLabel = storageLocation ? `${zone} — ${storageLocation}` : zone;
     const badge = document.getElementById('modal-zone-badge');
-    badge.textContent = `${zone} — ${zc.label}`;
+    badge.textContent = modalBadgeLabel;
     badge.style.background = zc.hex;
     document.getElementById('modal-type').textContent = item['Type'] || '—';
 
     // Details grid
-    const storageLocation = [item['Storage Type'], item['Storage Number']].filter(Boolean).join(' ');
     const details = [
       { label: 'Category',   value: item['Category'] },
       { label: 'Zone',       value: item['Zone'] },
-      { label: 'Location',   value: storageLocation },
       { label: 'Color',      value: item['Color'] },
       { label: 'Size',       value: item['Size'] },
       { label: 'Date Added', value: item['Timestamp'] ? new Date(item['Timestamp']).toLocaleDateString('en-US', {year:'numeric',month:'short',day:'numeric'}) : '' },
