@@ -735,14 +735,14 @@
     document.getElementById('modal-type').textContent = item['Type'] || '—';
 
     // Details grid
+    const storageLocation = [item['Storage Type'], item['Storage Number']].filter(Boolean).join(' ');
     const details = [
-      { label: 'Category',     value: item['Category'] },
-      { label: 'Zone',         value: item['Zone'] },
-      { label: 'Storage Type', value: item['Storage Type'] },
-      { label: 'Storage No.',  value: item['Storage Number'] },
-      { label: 'Color',        value: item['Color'] },
-      { label: 'Size',         value: item['Size'] },
-      { label: 'Date Added',   value: item['Timestamp'] ? new Date(item['Timestamp']).toLocaleDateString('en-US', {year:'numeric',month:'short',day:'numeric'}) : '' },
+      { label: 'Category',   value: item['Category'] },
+      { label: 'Zone',       value: item['Zone'] },
+      { label: 'Location',   value: storageLocation },
+      { label: 'Color',      value: item['Color'] },
+      { label: 'Size',       value: item['Size'] },
+      { label: 'Date Added', value: item['Timestamp'] ? new Date(item['Timestamp']).toLocaleDateString('en-US', {year:'numeric',month:'short',day:'numeric'}) : '' },
     ];
 
     document.getElementById('modal-details').innerHTML = details
